@@ -1,0 +1,26 @@
+[package]
+name = "disco-quick"
+version = "0.1.0"
+authors = ["sublipri"]
+edition = "2021"
+license = "MIT"
+description = "Libray for processing the Discogs XML data dumps"
+repository = "https://github.com/sublipri/disco-quick"
+keywords = ["xml", "discogs", "parser", "quick-xml"]
+readme = "README.md"
+
+[lib]
+
+[dependencies]
+flate2 = "1.0.28"
+log = "0.4.20"
+quick-xml = "0.31.0"
+serde = { version = "1.0.190", features = ["derive"], optional=true }
+thiserror = "1.0.50"
+
+[features]
+default = []
+
+# for examples/json.rs
+[dev-dependencies]
+serde_json = "1.0.107"
