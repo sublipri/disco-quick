@@ -1,10 +1,10 @@
 [package]
 name = "disco-quick"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["sublipri"]
 edition = "2021"
 license = "MIT"
-description = "Libray for processing the Discogs XML data dumps"
+description = "Library for processing the Discogs XML data dumps"
 repository = "https://github.com/sublipri/disco-quick"
 keywords = ["xml", "discogs", "parser", "quick-xml"]
 readme = "README.md"
