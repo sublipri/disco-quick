@@ -5,7 +5,11 @@ use quick_xml::events::{
 use std::borrow::Cow;
 
 pub fn get_attr(attr: Option<Result<Attribute<'_>, AttrError>>) -> Cow<'_, str> {
-    attr.unwrap().unwrap().unescape_value().unwrap()
+    if let Some(attr) = attr {
+        attr.unwrap().unescape_value().unwrap()
+    } else {
+        Cow::from("0")
+    }
 }
 
 pub fn get_attr_id(ev: BytesStart) -> u32 {
