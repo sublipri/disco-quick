@@ -196,8 +196,9 @@ impl Parser for ArtistParser {
                     ParserState::Aliases
                 }
                 Event::Text(e) => {
-                    let i = self.current_item.aliases.len() - 1;
-                    self.current_item.aliases[i].name = e.unescape()?.to_string();
+                    if let Some(artist_info) = self.current_item.aliases.last_mut() {
+                        artist_info.name = e.unescape()?.to_string();
+                    }
                     ParserState::Aliases
                 }
                 Event::End(e) if e.local_name().as_ref() == b"aliases" => ParserState::Artist,
@@ -226,8 +227,9 @@ impl Parser for ArtistParser {
 
             ParserState::MemberName => match ev {
                 Event::Text(e) => {
-                    let i = self.current_item.members.len() - 1;
-                    self.current_item.members[i].name = e.unescape()?.to_string();
+                    if let Some(artist_info) = self.current_item.aliases.last_mut() {
+                        artist_info.name = e.unescape()?.to_string();
+                    }
                     ParserState::Members
                 }
                 _ => ParserState::Members,
@@ -243,8 +245,9 @@ impl Parser for ArtistParser {
                     ParserState::Groups
                 }
                 Event::Text(e) => {
-                    let i = self.current_item.groups.len() - 1;
-                    self.current_item.groups[i].name = e.unescape()?.to_string();
+                    if let Some(artist_info) = self.current_item.aliases.last_mut() {
+                        artist_info.name = e.unescape()?.to_string();
+                    }
                     ParserState::Groups
                 }
                 Event::End(e) if e.local_name().as_ref() == b"groups" => ParserState::Artist,

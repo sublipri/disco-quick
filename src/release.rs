@@ -273,8 +273,9 @@ impl Parser for ReleaseParser {
                 }
                 Event::Text(e) => {
                     let description = e.unescape()?.to_string();
-                    let i = self.current_item.formats.len() - 1;
-                    self.current_item.formats[i].descriptions.push(description);
+                    if let Some(release_format) = self.current_item.formats.last_mut() {
+                        release_format.descriptions.push(description);
+                    }
                     ParserState::Format
                 }
                 Event::End(e) if e.local_name().as_ref() == b"formats" => ParserState::Release,
