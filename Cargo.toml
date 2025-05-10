@@ -14,7 +14,7 @@ readme = "README.md"
 [dependencies]
 flate2 = "1.0.28"
 log = "0.4.20"
-quick-xml = "0.31.0"
+quick-xml = "0.37.5"
 serde = { version = "1.0.190", features = ["derive"], optional=true }
 thiserror = "2.0.12"
 
