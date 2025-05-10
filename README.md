@@ -1,6 +1,6 @@
 # Disco Quick
 
-Disco Quick is a library for processing the [Discogs](https://www.discogs.com) monthly [data dumps](http://www.discogs.com/data/) via iterators of structs. It uses [quick-xml's](https://github.com/tafia/quick-xml) streaming API with a state machine decoupled from [discogs-load](https://github.com/DylanBartels/discogs-load) and significantly expanded to handle all the data in the dumps.
+Disco Quick is a library for processing the [Discogs](https://www.discogs.com) monthly [data dumps](http://www.discogs.com/data/) via iterators of structs. It uses [quick-xml's](https://github.com/tafia/quick-xml) streaming API with a state machine that was decoupled from [discogs-load](https://github.com/DylanBartels/discogs-load) and expanded to handle all the data in the dumps.
 
 ## Example:
 
