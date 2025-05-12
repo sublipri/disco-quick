@@ -4,7 +4,7 @@ use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::{Image, ReleaseLabel};
 use crate::track::{Track, TrackParser};
-use crate::util::get_attr;
+use crate::util::next_attr;
 use crate::video::{Video, VideoParser};
 use log::debug;
 use quick_xml::events::Event;
@@ -84,7 +84,7 @@ impl Iterator for ReleasesReader {
                 Event::Eof => {
                     return None;
                 }
-                ev => self.parser.process(ev).unwrap(),
+                ev => self.parser.process(&ev).unwrap(),
             };
             if self.parser.item_ready {
                 return Some(self.parser.take());
@@ -139,7 +139,7 @@ impl Parser for ReleaseParser {
         take(&mut self.current_item)
     }
 
-    fn process(&mut self, ev: Event) -> Result<(), ParserError> {
+    fn process(&mut self, ev: &Event) -> Result<(), ParserError> {
         self.state = match self.state {
             ParserState::Release => match ev {
                 Event::End(e) if e.local_name().as_ref() == b"release" => {
@@ -148,14 +148,14 @@ impl Parser for ReleaseParser {
                 }
                 Event::Start(e) if e.local_name().as_ref() == b"release" => {
                     let mut a = e.attributes();
-                    self.current_item.id = get_attr(a.next()).parse()?;
+                    self.current_item.id = next_attr(&mut a)?.parse()?;
                     debug!("Began parsing Release {}", self.current_item.id);
-                    self.current_item.status = get_attr(a.next()).to_string();
+                    self.current_item.status = next_attr(&mut a)?.to_string();
                     ParserState::Release
                 }
                 Event::Start(e) if e.local_name().as_ref() == b"master_id" => {
                     let mut a = e.attributes();
-                    self.current_item.is_main_release = get_attr(a.next()).parse()?;
+                    self.current_item.is_main_release = next_attr(&mut a)?.parse()?;
                     ParserState::MasterId
                 }
                 Event::Start(e) => match e.local_name().as_ref() {
@@ -260,11 +260,11 @@ impl Parser for ReleaseParser {
                 Event::Start(e) if e.local_name().as_ref() == b"format" => {
                     let mut attrs = e.attributes();
                     let mut format = ReleaseFormat {
-                        name: get_attr(attrs.next()).to_string(),
-                        qty: get_attr(attrs.next()).to_string(),
+                        name: next_attr(&mut attrs)?.to_string(),
+                        qty: next_attr(&mut attrs)?.to_string(),
                         ..Default::default()
                     };
-                    let text = get_attr(attrs.next()).to_string();
+                    let text = next_attr(&mut attrs)?.to_string();
                     if !text.is_empty() {
                         format.text = Some(text)
                     }
@@ -273,8 +273,10 @@ impl Parser for ReleaseParser {
                 }
                 Event::Text(e) => {
                     let description = e.unescape()?.to_string();
-                    let i = self.current_item.formats.len() - 1;
-                    self.current_item.formats[i].descriptions.push(description);
+                    let Some(format) = self.current_item.formats.last_mut() else {
+                        return Err(ParserError::MissingData);
+                    };
+                    format.descriptions.push(description);
                     ParserState::Format
                 }
                 Event::End(e) if e.local_name().as_ref() == b"formats" => ParserState::Release,
@@ -286,10 +288,10 @@ impl Parser for ReleaseParser {
                 Event::Empty(e) => {
                     let mut attrs = e.attributes();
                     let identifier = ReleaseIdentifier {
-                        r#type: get_attr(attrs.next()).to_string(),
-                        description: get_attr(attrs.next()).to_string(),
+                        r#type: next_attr(&mut attrs)?.to_string(),
+                        description: next_attr(&mut attrs)?.to_string(),
                         value: if let Some(v) = attrs.next() {
-                            Some(v.unwrap().unescape_value()?.to_string())
+                            Some(v?.unescape_value()?.to_string())
                         } else {
                             None
                         },
@@ -322,9 +324,9 @@ impl Parser for ReleaseParser {
                 Event::Empty(e) => {
                     let mut attrs = e.attributes();
                     let label = ReleaseLabel {
-                        name: get_attr(attrs.next()).to_string(),
-                        catno: Some(get_attr(attrs.next()).to_string()),
-                        id: get_attr(attrs.next()).parse()?,
+                        name: next_attr(&mut attrs)?.to_string(),
+                        catno: Some(next_attr(&mut attrs)?.to_string()),
+                        id: next_attr(&mut attrs)?.parse()?,
                         entity_type: 1,
                         entity_type_name: "Label".to_string(),
                     };

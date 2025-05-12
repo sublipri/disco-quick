@@ -1,14 +1,16 @@
-use quick_xml::events::{
-    attributes::{AttrError, Attribute},
-    BytesStart,
-};
+use quick_xml::events::{attributes::Attributes, BytesStart};
 use std::borrow::Cow;
 
-pub fn get_attr(attr: Option<Result<Attribute<'_>, AttrError>>) -> Cow<'_, str> {
-    attr.unwrap().unwrap().unescape_value().unwrap()
+use crate::parser::ParserError;
+
+pub fn next_attr<'a>(attrs: &mut Attributes<'a>) -> Result<Cow<'a, str>, ParserError> {
+    let Some(attr) = attrs.next() else {
+        return Err(ParserError::MissingAttr);
+    };
+    Ok(attr?.unescape_value()?)
 }
 
-pub fn get_attr_id(ev: BytesStart) -> u32 {
+pub fn get_attr_id(ev: &BytesStart) -> Result<u32, ParserError> {
     let mut attrs = ev.attributes();
-    get_attr(attrs.next()).parse().unwrap()
+    Ok(next_attr(&mut attrs)?.parse()?)
 }

@@ -56,7 +56,7 @@ impl Iterator for MastersReader {
                 Event::Eof => {
                     return None;
                 }
-                ev => self.parser.process(ev).unwrap(),
+                ev => self.parser.process(&ev).unwrap(),
             };
             if self.parser.item_ready {
                 return Some(self.parser.take());
@@ -102,11 +102,11 @@ impl Parser for MasterParser {
         take(&mut self.current_item)
     }
 
-    fn process(&mut self, ev: Event) -> Result<(), ParserError> {
+    fn process(&mut self, ev: &Event) -> Result<(), ParserError> {
         self.state = match self.state {
             ParserState::Master => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"master" => {
-                    self.current_item.id = get_attr_id(e);
+                    self.current_item.id = get_attr_id(e)?;
                     debug!("Began parsing Master {}", self.current_item.id);
                     ParserState::Master
                 }
@@ -171,7 +171,7 @@ impl Parser for MasterParser {
 
             ParserState::Images => match ev {
                 Event::Empty(e) if e.local_name().as_ref() == b"image" => {
-                    let image = Image::from_event(e);
+                    let image = Image::from_event(e)?;
                     self.current_item.images.push(image);
                     ParserState::Images
                 }

@@ -65,7 +65,7 @@ impl Parser for ArtistCreditParser {
         self.item_ready = false;
         take(&mut self.current_item)
     }
-    fn process(&mut self, ev: Event) -> Result<(), ParserError> {
+    fn process(&mut self, ev: &Event) -> Result<(), ParserError> {
         self.state = match self.state {
             ParserState::Artist => match ev {
                 Event::Start(e) => match e.local_name().as_ref() {

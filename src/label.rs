@@ -58,7 +58,7 @@ impl Iterator for LabelsReader {
                 Event::Eof => {
                     return None;
                 }
-                ev => self.parser.process(ev).unwrap(),
+                ev => self.parser.process(&ev).unwrap(),
             };
             if self.parser.item_ready {
                 return Some(self.parser.take());
@@ -103,7 +103,7 @@ impl Parser for LabelParser {
         take(&mut self.current_item)
     }
 
-    fn process(&mut self, ev: Event) -> Result<(), ParserError> {
+    fn process(&mut self, ev: &Event) -> Result<(), ParserError> {
         self.state = match self.state {
             ParserState::Label => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"label" => ParserState::Label,
@@ -114,7 +114,7 @@ impl Parser for LabelParser {
                     b"contactinfo" => ParserState::Contactinfo,
                     b"profile" => ParserState::Profile,
                     b"parentLabel" => {
-                        self.current_parent_id = Some(get_attr_id(e));
+                        self.current_parent_id = Some(get_attr_id(e)?);
                         ParserState::ParentLabel
                     }
                     b"sublabels" => ParserState::Sublabels,
@@ -150,7 +150,7 @@ impl Parser for LabelParser {
 
             ParserState::Images => match ev {
                 Event::Empty(e) if e.local_name().as_ref() == b"image" => {
-                    let image = Image::from_event(e);
+                    let image = Image::from_event(e)?;
                     self.current_item.images.push(image);
                     ParserState::Images
                 }
@@ -177,8 +177,11 @@ impl Parser for LabelParser {
 
             ParserState::ParentLabel => match ev {
                 Event::Text(e) => {
+                    let Some(id) = self.current_parent_id else {
+                        return Err(ParserError::MissingData);
+                    };
                     let parent_label = LabelInfo {
-                        id: self.current_parent_id.unwrap(),
+                        id,
                         name: e.unescape()?.to_string(),
                     };
                     self.current_item.parent_label = Some(parent_label);
@@ -190,7 +193,7 @@ impl Parser for LabelParser {
 
             ParserState::Sublabels => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"label" => {
-                    self.current_sublabel_id = Some(get_attr_id(e));
+                    self.current_sublabel_id = Some(get_attr_id(e)?);
                     ParserState::Sublabel
                 }
                 Event::End(e) if e.local_name().as_ref() == b"sublabels" => ParserState::Label,
@@ -200,8 +203,11 @@ impl Parser for LabelParser {
 
             ParserState::Sublabel => match ev {
                 Event::Text(e) => {
+                    let Some(id) = self.current_sublabel_id else {
+                        return Err(ParserError::MissingData);
+                    };
                     let sublabel = LabelInfo {
-                        id: self.current_sublabel_id.unwrap(),
+                        id,
                         name: e.unescape()?.to_string(),
                     };
                     self.current_item.sublabels.push(sublabel);

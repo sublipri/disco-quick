@@ -8,15 +8,21 @@ pub trait Parser {
 
     fn take(&mut self) -> Self::Item;
 
-    fn process(&mut self, ev: Event) -> Result<(), ParserError>;
+    fn process(&mut self, ev: &Event) -> Result<(), ParserError>;
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum ParserError {
     #[error(transparent)]
-    Xml(#[from] quick_xml::Error),
+    QuickXml(#[from] quick_xml::Error),
     #[error(transparent)]
-    Int(#[from] std::num::ParseIntError),
+    QuickXmlAttr(#[from] quick_xml::events::attributes::AttrError),
     #[error(transparent)]
-    Bool(#[from] std::str::ParseBoolError),
+    ParseInt(#[from] std::num::ParseIntError),
+    #[error(transparent)]
+    ParseBool(#[from] std::str::ParseBoolError),
+    #[error("missing an expected XML attribute")]
+    MissingAttr,
+    #[error("missing data that should have already been parsed")]
+    MissingData,
 }

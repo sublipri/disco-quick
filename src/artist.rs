@@ -60,7 +60,7 @@ impl Iterator for ArtistsReader {
                 Event::Eof => {
                     return None;
                 }
-                ev => self.parser.process(ev).unwrap(),
+                ev => self.parser.process(&ev).unwrap(),
             };
             if self.parser.item_ready {
                 return Some(self.parser.take());
@@ -107,7 +107,7 @@ impl Parser for ArtistParser {
         take(&mut self.current_item)
     }
 
-    fn process(&mut self, ev: Event) -> Result<(), ParserError> {
+    fn process(&mut self, ev: &Event) -> Result<(), ParserError> {
         self.state = match self.state {
             ParserState::Artist => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"artist" => ParserState::Artist,
@@ -189,15 +189,17 @@ impl Parser for ArtistParser {
             ParserState::Aliases => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"name" => {
                     let alias = ArtistInfo {
-                        id: get_attr_id(e),
+                        id: get_attr_id(e)?,
                         ..Default::default()
                     };
                     self.current_item.aliases.push(alias);
                     ParserState::Aliases
                 }
                 Event::Text(e) => {
-                    let i = self.current_item.aliases.len() - 1;
-                    self.current_item.aliases[i].name = e.unescape()?.to_string();
+                    let Some(alias) = self.current_item.aliases.last_mut() else {
+                        return Err(ParserError::MissingData);
+                    };
+                    alias.name = e.unescape()?.to_string();
                     ParserState::Aliases
                 }
                 Event::End(e) if e.local_name().as_ref() == b"aliases" => ParserState::Artist,
@@ -226,8 +228,10 @@ impl Parser for ArtistParser {
 
             ParserState::MemberName => match ev {
                 Event::Text(e) => {
-                    let i = self.current_item.members.len() - 1;
-                    self.current_item.members[i].name = e.unescape()?.to_string();
+                    let Some(member) = self.current_item.members.last_mut() else {
+                        return Err(ParserError::MissingData);
+                    };
+                    member.name = e.unescape()?.to_string();
                     ParserState::Members
                 }
                 _ => ParserState::Members,
@@ -236,15 +240,17 @@ impl Parser for ArtistParser {
             ParserState::Groups => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"name" => {
                     let group = ArtistInfo {
-                        id: get_attr_id(e),
+                        id: get_attr_id(e)?,
                         ..Default::default()
                     };
                     self.current_item.groups.push(group);
                     ParserState::Groups
                 }
                 Event::Text(e) => {
-                    let i = self.current_item.groups.len() - 1;
-                    self.current_item.groups[i].name = e.unescape()?.to_string();
+                    let Some(group) = self.current_item.groups.last_mut() else {
+                        return Err(ParserError::MissingData);
+                    };
+                    group.name = e.unescape()?.to_string();
                     ParserState::Groups
                 }
                 Event::End(e) if e.local_name().as_ref() == b"groups" => ParserState::Artist,
@@ -266,7 +272,7 @@ impl Parser for ArtistParser {
 
             ParserState::Images => match ev {
                 Event::Empty(e) if e.local_name().as_ref() == b"image" => {
-                    let image = Image::from_event(e);
+                    let image = Image::from_event(e)?;
                     self.current_item.images.push(image);
                     ParserState::Images
                 }

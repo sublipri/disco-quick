@@ -1,4 +1,4 @@
-use crate::util::get_attr;
+use crate::{parser::ParserError, util::next_attr};
 use quick_xml::events::BytesStart;
 
 #[derive(Clone, Debug, Default)]
@@ -22,14 +22,14 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn from_event(ev: BytesStart) -> Self {
+    pub fn from_event(ev: &BytesStart) -> Result<Self, ParserError> {
         let mut attrs = ev.attributes();
-        Image {
-            r#type: get_attr(attrs.next()).to_string(),
-            uri: get_attr(attrs.next()).to_string(),
-            uri150: get_attr(attrs.next()).to_string(),
-            width: get_attr(attrs.next()).parse().unwrap(),
-            height: get_attr(attrs.next()).parse().unwrap(),
-        }
+        Ok(Image {
+            r#type: next_attr(&mut attrs)?.to_string(),
+            uri: next_attr(&mut attrs)?.to_string(),
+            uri150: next_attr(&mut attrs)?.to_string(),
+            width: next_attr(&mut attrs)?.parse()?,
+            height: next_attr(&mut attrs)?.parse()?,
+        })
     }
 }
