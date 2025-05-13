@@ -14,7 +14,7 @@ use std::mem::take;
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Release {
-    pub id: i32,
+    pub id: u32,
     pub status: String,
     pub title: String,
     pub artists: Vec<ArtistCredit>,
@@ -24,7 +24,7 @@ pub struct Release {
     pub notes: Option<String>,
     pub genres: Vec<String>,
     pub styles: Vec<String>,
-    pub master_id: Option<i32>,
+    pub master_id: Option<u32>,
     pub is_main_release: bool,
     pub data_quality: String,
     pub images: Vec<Image>,

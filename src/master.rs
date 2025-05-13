@@ -14,8 +14,8 @@ use std::mem::take;
 pub struct Master {
     pub id: u32,
     pub title: String,
-    pub main_release: i32,
-    pub year: i32,
+    pub main_release: u32,
+    pub year: u16,
     pub notes: Option<String>,
     pub genres: Vec<String>,
     pub styles: Vec<String>,

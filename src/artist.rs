@@ -10,7 +10,7 @@ use std::mem::take;
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Artist {
-    pub id: i32,
+    pub id: u32,
     pub name: String,
     pub real_name: Option<String>,
     pub profile: Option<String>,
