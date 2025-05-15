@@ -208,21 +208,22 @@ impl Parser for ArtistParser {
             },
 
             ParserState::Members => match ev {
-                Event::Start(e) if e.local_name().as_ref() == b"name" => ParserState::MemberName,
+                Event::Start(e) if e.local_name().as_ref() == b"name" => {
+                    let member = ArtistInfo {
+                        id: find_attr(e, b"id")?.parse()?,
+                        ..Default::default()
+                    };
+                    self.current_item.members.push(member);
+                    ParserState::MemberName
+                }
                 Event::Start(e) if e.local_name().as_ref() == b"id" => ParserState::MemberId,
                 Event::End(e) if e.local_name().as_ref() == b"members" => ParserState::Artist,
                 _ => ParserState::Members,
             },
 
+            // Removed from the dumps in 2025, but remains present as an attr of the member name
             ParserState::MemberId => match ev {
-                Event::Text(e) => {
-                    let member = ArtistInfo {
-                        id: e.unescape()?.parse()?,
-                        ..Default::default()
-                    };
-                    self.current_item.members.push(member);
-                    ParserState::Members
-                }
+                Event::Text(_) => ParserState::MemberId,
                 _ => ParserState::Members,
             },
 
