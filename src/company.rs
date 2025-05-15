@@ -52,7 +52,7 @@ impl Parser for CompanyParser {
 
             ParserState::Id => match ev {
                 Event::Text(e) => {
-                    self.current_item.id = e.unescape()?.parse()?;
+                    self.current_item.id = Some(e.unescape()?.parse()?);
                     ParserState::Company
                 }
                 _ => ParserState::Company,

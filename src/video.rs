@@ -1,5 +1,5 @@
 use crate::parser::{Parser, ParserError};
-use crate::util::next_attr;
+use crate::util::find_attr;
 use quick_xml::events::Event;
 use std::mem::take;
 
@@ -43,10 +43,9 @@ impl Parser for VideoParser {
             ParserState::Video => match ev {
                 Event::Start(e) => match e.local_name().as_ref() {
                     b"video" => {
-                        let mut attrs = e.attributes();
-                        self.current_item.src = next_attr(&mut attrs)?.to_string();
-                        self.current_item.duration = next_attr(&mut attrs)?.parse()?;
-                        self.current_item.embed = next_attr(&mut attrs)?.parse()?;
+                        self.current_item.src = find_attr(e, b"src")?.to_string();
+                        self.current_item.duration = find_attr(e, b"duration")?.parse()?;
+                        self.current_item.embed = find_attr(e, b"embed")?.parse()?;
                         ParserState::Video
                     }
                     b"title" => ParserState::Title,

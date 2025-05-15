@@ -1,7 +1,7 @@
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::Image;
-use crate::util::get_attr_id;
+use crate::util::find_attr;
 use log::debug;
 use quick_xml::events::Event;
 use std::fmt;
@@ -189,7 +189,7 @@ impl Parser for ArtistParser {
             ParserState::Aliases => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"name" => {
                     let alias = ArtistInfo {
-                        id: get_attr_id(e)?,
+                        id: find_attr(e, b"id")?.parse()?,
                         ..Default::default()
                     };
                     self.current_item.aliases.push(alias);
@@ -240,7 +240,7 @@ impl Parser for ArtistParser {
             ParserState::Groups => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"name" => {
                     let group = ArtistInfo {
-                        id: get_attr_id(e)?,
+                        id: find_attr(e, b"id")?.parse()?,
                         ..Default::default()
                     };
                     self.current_item.groups.push(group);

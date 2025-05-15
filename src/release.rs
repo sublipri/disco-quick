@@ -4,7 +4,7 @@ use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::{Image, ReleaseLabel};
 use crate::track::{Track, TrackParser};
-use crate::util::next_attr;
+use crate::util::{find_attr, find_attr_optional};
 use crate::video::{Video, VideoParser};
 use log::debug;
 use quick_xml::events::Event;
@@ -49,7 +49,7 @@ pub struct ReleaseFormat {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ReleaseIdentifier {
     pub r#type: String,
-    pub description: String,
+    pub description: Option<String>,
     pub value: Option<String>,
 }
 
@@ -147,15 +147,14 @@ impl Parser for ReleaseParser {
                     ParserState::Release
                 }
                 Event::Start(e) if e.local_name().as_ref() == b"release" => {
-                    let mut a = e.attributes();
-                    self.current_item.id = next_attr(&mut a)?.parse()?;
+                    self.current_item.id = find_attr(e, b"id")?.parse()?;
                     debug!("Began parsing Release {}", self.current_item.id);
-                    self.current_item.status = next_attr(&mut a)?.to_string();
+                    self.current_item.status = find_attr(e, b"status")?.to_string();
                     ParserState::Release
                 }
                 Event::Start(e) if e.local_name().as_ref() == b"master_id" => {
-                    let mut a = e.attributes();
-                    self.current_item.is_main_release = next_attr(&mut a)?.parse()?;
+                    self.current_item.is_main_release =
+                        find_attr(e, b"is_main_release")?.parse()?;
                     ParserState::MasterId
                 }
                 Event::Start(e) => match e.local_name().as_ref() {
@@ -258,16 +257,12 @@ impl Parser for ReleaseParser {
 
             ParserState::Format => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"format" => {
-                    let mut attrs = e.attributes();
-                    let mut format = ReleaseFormat {
-                        name: next_attr(&mut attrs)?.to_string(),
-                        qty: next_attr(&mut attrs)?.to_string(),
+                    let format = ReleaseFormat {
+                        name: find_attr(e, b"name")?.to_string(),
+                        qty: find_attr(e, b"qty")?.to_string(),
+                        text: find_attr_optional(e, b"text")?.map(|t| t.to_string()),
                         ..Default::default()
                     };
-                    let text = next_attr(&mut attrs)?.to_string();
-                    if !text.is_empty() {
-                        format.text = Some(text)
-                    }
                     self.current_item.formats.push(format);
                     ParserState::Format
                 }
@@ -286,15 +281,10 @@ impl Parser for ReleaseParser {
 
             ParserState::Identifiers => match ev {
                 Event::Empty(e) => {
-                    let mut attrs = e.attributes();
                     let identifier = ReleaseIdentifier {
-                        r#type: next_attr(&mut attrs)?.to_string(),
-                        description: next_attr(&mut attrs)?.to_string(),
-                        value: if let Some(v) = attrs.next() {
-                            Some(v?.unescape_value()?.to_string())
-                        } else {
-                            None
-                        },
+                        r#type: find_attr(e, b"type")?.to_string(),
+                        description: find_attr_optional(e, b"description")?.map(|d| d.to_string()),
+                        value: find_attr_optional(e, b"value")?.map(|v| v.to_string()),
                     };
                     self.current_item.identifiers.push(identifier);
                     ParserState::Identifiers
@@ -322,11 +312,14 @@ impl Parser for ReleaseParser {
 
             ParserState::Labels => match ev {
                 Event::Empty(e) => {
-                    let mut attrs = e.attributes();
+                    let id = match find_attr_optional(e, b"id")? {
+                        Some(id) => Some(id.parse()?),
+                        None => None,
+                    };
                     let label = ReleaseLabel {
-                        name: next_attr(&mut attrs)?.to_string(),
-                        catno: Some(next_attr(&mut attrs)?.to_string()),
-                        id: next_attr(&mut attrs)?.parse()?,
+                        name: find_attr(e, b"name")?.to_string(),
+                        catno: find_attr_optional(e, b"catno")?.map(|c| c.to_string()),
+                        id,
                         entity_type: 1,
                         entity_type_name: "Label".to_string(),
                     };

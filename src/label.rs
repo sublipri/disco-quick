@@ -1,7 +1,7 @@
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::Image;
-use crate::util::get_attr_id;
+use crate::util::find_attr;
 use log::debug;
 use quick_xml::events::Event;
 use std::fmt;
@@ -114,7 +114,7 @@ impl Parser for LabelParser {
                     b"contactinfo" => ParserState::Contactinfo,
                     b"profile" => ParserState::Profile,
                     b"parentLabel" => {
-                        self.current_parent_id = Some(get_attr_id(e)?);
+                        self.current_parent_id = Some(find_attr(e, b"id")?.parse()?);
                         ParserState::ParentLabel
                     }
                     b"sublabels" => ParserState::Sublabels,
@@ -193,7 +193,7 @@ impl Parser for LabelParser {
 
             ParserState::Sublabels => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"label" => {
-                    self.current_sublabel_id = Some(get_attr_id(e)?);
+                    self.current_sublabel_id = Some(find_attr(e, b"id")?.parse()?);
                     ParserState::Sublabel
                 }
                 Event::End(e) if e.local_name().as_ref() == b"sublabels" => ParserState::Label,

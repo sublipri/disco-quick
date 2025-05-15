@@ -2,7 +2,7 @@ use crate::artist_credit::{get_credit_string, ArtistCredit, ArtistCreditParser};
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::Image;
-use crate::util::get_attr_id;
+use crate::util::find_attr;
 use crate::video::{Video, VideoParser};
 use log::debug;
 use quick_xml::events::Event;
@@ -106,7 +106,7 @@ impl Parser for MasterParser {
         self.state = match self.state {
             ParserState::Master => match ev {
                 Event::Start(e) if e.local_name().as_ref() == b"master" => {
-                    self.current_item.id = get_attr_id(e)?;
+                    self.current_item.id = find_attr(e, b"id")?.parse()?;
                     debug!("Began parsing Master {}", self.current_item.id);
                     ParserState::Master
                 }
