@@ -7,7 +7,7 @@ use quick_xml::events::Event;
 use quick_xml::Error as XmlError;
 use std::fmt;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Error as IoError};
+use std::io::{BufRead, BufReader, Error as IoError, Seek};
 use std::path::Path;
 use thiserror::Error;
 
@@ -19,8 +19,9 @@ pub fn get_xml_reader(path: &Path) -> Result<XmlReader, IoError> {
     let reader: Box<dyn BufRead> = if gz.header().is_some() {
         Box::new(BufReader::new(gz))
     } else {
-        let file = File::open(path)?;
-        Box::new(BufReader::new(file))
+        let mut reader = gz.into_inner();
+        reader.rewind()?;
+        Box::new(BufReader::new(reader))
     };
     Ok(quick_xml::Reader::from_reader(reader))
 }
