@@ -1,5 +1,8 @@
 use log::warn;
-use quick_xml::{events::BytesStart, name::QName};
+use quick_xml::{
+    events::{BytesStart, BytesText},
+    name::QName,
+};
 use std::borrow::Cow;
 
 use crate::parser::ParserError;
@@ -31,4 +34,11 @@ pub fn find_attr<'a>(ev: &'a BytesStart, name: &'static [u8]) -> Result<Cow<'a, 
         let name = unsafe { std::str::from_utf8_unchecked(name) };
         ParserError::MissingAttr(name)
     })
+}
+
+pub fn maybe_text(ev: &BytesText) -> Result<Option<String>, ParserError> {
+    if ev.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(ev.unescape()?.to_string()))
 }

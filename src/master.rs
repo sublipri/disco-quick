@@ -2,7 +2,7 @@ use crate::artist_credit::{get_credit_string, ArtistCredit, ArtistCreditParser};
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::Image;
-use crate::util::find_attr;
+use crate::util::{find_attr, maybe_text};
 use crate::video::{Video, VideoParser};
 use log::debug;
 use quick_xml::events::Event;
@@ -202,7 +202,7 @@ impl Parser for MasterParser {
 
             ParserState::Notes => match ev {
                 Event::Text(e) => {
-                    self.current_item.notes = Some(e.unescape()?.to_string());
+                    self.current_item.notes = maybe_text(e)?;
                     ParserState::Notes
                 }
                 _ => ParserState::Master,

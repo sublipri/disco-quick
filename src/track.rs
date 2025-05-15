@@ -1,5 +1,6 @@
 use crate::artist_credit::{ArtistCredit, ArtistCreditParser};
 use crate::parser::{Parser, ParserError};
+use crate::util::maybe_text;
 use quick_xml::events::Event;
 use std::mem::take;
 
@@ -80,7 +81,7 @@ impl Parser for TrackParser {
 
             ParserState::Duration => match ev {
                 Event::Text(e) => {
-                    self.current_item.duration = Some(e.unescape()?.to_string());
+                    self.current_item.duration = maybe_text(e)?;
                     ParserState::Track
                 }
                 _ => ParserState::Track,

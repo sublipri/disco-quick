@@ -1,7 +1,7 @@
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::Image;
-use crate::util::find_attr;
+use crate::util::{find_attr, maybe_text};
 use log::debug;
 use quick_xml::events::Event;
 use std::fmt;
@@ -161,7 +161,7 @@ impl Parser for LabelParser {
 
             ParserState::Contactinfo => match ev {
                 Event::Text(e) => {
-                    self.current_item.contactinfo = Some(e.unescape()?.to_string());
+                    self.current_item.contactinfo = maybe_text(e)?;
                     ParserState::Contactinfo
                 }
                 _ => ParserState::Label,
@@ -169,7 +169,7 @@ impl Parser for LabelParser {
 
             ParserState::Profile => match ev {
                 Event::Text(e) => {
-                    self.current_item.profile = Some(e.unescape()?.to_string());
+                    self.current_item.profile = maybe_text(e)?;
                     ParserState::Profile
                 }
                 _ => ParserState::Label,

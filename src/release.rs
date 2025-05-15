@@ -4,7 +4,7 @@ use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::{Image, ReleaseLabel};
 use crate::track::{Track, TrackParser};
-use crate::util::{find_attr, find_attr_optional};
+use crate::util::{find_attr, find_attr_optional, maybe_text};
 use crate::video::{Video, VideoParser};
 use log::debug;
 use quick_xml::events::Event;
@@ -204,7 +204,7 @@ impl Parser for ReleaseParser {
 
             ParserState::Notes => match ev {
                 Event::Text(e) => {
-                    self.current_item.notes = Some(e.unescape()?.to_string());
+                    self.current_item.notes = maybe_text(e)?;
                     ParserState::Notes
                 }
                 _ => ParserState::Release,

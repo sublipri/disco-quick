@@ -1,4 +1,7 @@
-use crate::parser::{Parser, ParserError};
+use crate::{
+    parser::{Parser, ParserError},
+    util::maybe_text,
+};
 use quick_xml::events::Event;
 use std::mem::take;
 
@@ -103,7 +106,7 @@ impl Parser for ArtistCreditParser {
 
             ParserState::Anv => match ev {
                 Event::Text(e) => {
-                    self.current_item.anv = Some(e.unescape()?.to_string());
+                    self.current_item.anv = maybe_text(e)?;
                     ParserState::Artist
                 }
                 _ => ParserState::Artist,
@@ -111,7 +114,7 @@ impl Parser for ArtistCreditParser {
 
             ParserState::Join => match ev {
                 Event::Text(e) => {
-                    self.current_item.join = Some(e.unescape()?.to_string());
+                    self.current_item.join = maybe_text(e)?;
                     ParserState::Artist
                 }
                 _ => ParserState::Artist,
@@ -119,7 +122,7 @@ impl Parser for ArtistCreditParser {
 
             ParserState::Role => match ev {
                 Event::Text(e) => {
-                    self.current_item.role = Some(e.unescape()?.to_string());
+                    self.current_item.role = maybe_text(e)?;
                     ParserState::Artist
                 }
                 _ => ParserState::Artist,
@@ -127,7 +130,7 @@ impl Parser for ArtistCreditParser {
 
             ParserState::Tracks => match ev {
                 Event::Text(e) => {
-                    self.current_item.tracks = Some(e.unescape()?.to_string());
+                    self.current_item.tracks = maybe_text(e)?;
                     ParserState::Artist
                 }
                 _ => ParserState::Artist,

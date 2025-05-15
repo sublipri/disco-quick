@@ -1,5 +1,6 @@
 use crate::parser::{Parser, ParserError};
 use crate::shared::ReleaseLabel;
+use crate::util::maybe_text;
 use quick_xml::events::Event;
 use std::mem::take;
 
@@ -68,7 +69,7 @@ impl Parser for CompanyParser {
 
             ParserState::Catno => match ev {
                 Event::Text(e) => {
-                    self.current_item.catno = Some(e.unescape()?.to_string());
+                    self.current_item.catno = maybe_text(e)?;
                     ParserState::Company
                 }
                 _ => ParserState::Company,
