@@ -34,27 +34,49 @@ pub enum DiscogsReader {
 }
 
 impl DiscogsReader {
+    /// Open an XML file at the given path, and return the appropriate reader based on its contents.
+    /// The file can be either uncompressed or gzip compressed.
     pub fn from_path(path: &Path) -> Result<DiscogsReader, ReaderError> {
-        let mut xml_reader = get_xml_reader(path)?;
-        let mut buf = Vec::with_capacity(4096);
-        let start_event = loop {
-            match xml_reader.read_event_into(&mut buf)? {
-                Event::Start(ev) => break ev,
-                Event::Eof => return Err(ReaderError::NoStartTag),
-                _ => continue,
-            }
+        // Since GzDecoder doesn't impl Seek, we open the file twice. Once to read the start tag,
+        // then again so the parsers can read from the start of the file, which is necessary for
+        // old versions of the dump that contain e.g. <artist> as the first tag, not <artists>
+        let start_tag = {
+            let xml_reader = get_xml_reader(path)?;
+            read_start_tag(xml_reader)?
         };
-        let reader = match start_event.name().as_ref() {
-            b"artists" => DiscogsReader::Artists(Box::new(ArtistsReader::new(xml_reader, buf))),
-            b"labels" => DiscogsReader::Labels(Box::new(LabelsReader::new(xml_reader, buf))),
-            b"masters" => DiscogsReader::Masters(Box::new(MastersReader::new(xml_reader, buf))),
-            b"releases" => DiscogsReader::Releases(Box::new(ReleasesReader::new(xml_reader, buf))),
+        let xml_reader = get_xml_reader(path)?;
+        let buf = Vec::with_capacity(4096);
+        let reader = match start_tag.as_ref() {
+            "artists" | "artist" => {
+                DiscogsReader::Artists(Box::new(ArtistsReader::new(xml_reader, buf)))
+            }
+            "labels" | "label" => {
+                DiscogsReader::Labels(Box::new(LabelsReader::new(xml_reader, buf)))
+            }
+            "masters" | "master" => {
+                DiscogsReader::Masters(Box::new(MastersReader::new(xml_reader, buf)))
+            }
+            "releases" | "release" => {
+                DiscogsReader::Releases(Box::new(ReleasesReader::new(xml_reader, buf)))
+            }
             _ => {
-                return Err(ReaderError::InvalidStartTag);
+                return Err(ReaderError::InvalidStartTag(start_tag));
             }
         };
         Ok(reader)
     }
+}
+
+fn read_start_tag(mut reader: XmlReader) -> Result<String, ReaderError> {
+    let mut buf = Vec::with_capacity(4096);
+    let start_event = loop {
+        match reader.read_event_into(&mut buf)? {
+            Event::Start(ev) => break ev,
+            Event::Eof => return Err(ReaderError::NoStartTag),
+            _ => continue,
+        }
+    };
+    Ok(String::from_utf8_lossy(start_event.name().as_ref()).into_owned())
 }
 
 #[derive(Error, Debug)]
@@ -65,8 +87,8 @@ pub enum ReaderError {
     XmlError(#[from] XmlError),
     #[error("No start tag present in file")]
     NoStartTag,
-    #[error("Invalid start tag present in file")]
-    InvalidStartTag,
+    #[error("Invalid start tag present in file: {0}")]
+    InvalidStartTag(String),
 }
 
 impl fmt::Display for DiscogsReader {
