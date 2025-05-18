@@ -1,8 +1,8 @@
 use crate::artist_credit::{get_credit_string, ArtistCredit, ArtistCreditParser};
-use crate::company::CompanyParser;
+use crate::company::{CompanyParser, ReleaseCompany};
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
-use crate::shared::{Image, ReleaseLabel};
+use crate::shared::Image;
 use crate::track::{Track, TrackParser};
 use crate::util::{find_attr, find_attr_optional, maybe_text};
 use crate::video::{Video, VideoParser};
@@ -20,6 +20,7 @@ pub struct Release {
     pub artists: Vec<ArtistCredit>,
     pub country: String,
     pub labels: Vec<ReleaseLabel>,
+    pub series: Vec<ReleaseLabel>,
     pub released: String,
     pub notes: Option<String>,
     pub genres: Vec<String>,
@@ -32,8 +33,16 @@ pub struct Release {
     pub extraartists: Vec<ArtistCredit>,
     pub tracklist: Vec<Track>,
     pub formats: Vec<ReleaseFormat>,
-    pub companies: Vec<ReleaseLabel>,
+    pub companies: Vec<ReleaseCompany>,
     pub identifiers: Vec<ReleaseIdentifier>,
+}
+
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ReleaseLabel {
+    pub id: Option<u32>,
+    pub name: String,
+    pub catno: Option<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -107,6 +116,7 @@ enum ParserState {
     MasterId,
     DataQuality,
     Labels,
+    Series,
     Videos,
     Artists,
     ExtraArtists,
@@ -166,6 +176,7 @@ impl Parser for ReleaseParser {
                     b"styles" => ParserState::Styles,
                     b"data_quality" => ParserState::DataQuality,
                     b"labels" => ParserState::Labels,
+                    b"series" => ParserState::Series,
                     b"videos" => ParserState::Videos,
                     b"artists" => ParserState::Artists,
                     b"extraartists" => ParserState::ExtraArtists,
@@ -320,11 +331,26 @@ impl Parser for ReleaseParser {
                         name: find_attr(e, b"name")?.to_string(),
                         catno: find_attr_optional(e, b"catno")?.map(|c| c.to_string()),
                         id,
-                        entity_type: 1,
-                        entity_type_name: "Label".to_string(),
                     };
                     self.current_item.labels.push(label);
                     ParserState::Labels
+                }
+                _ => ParserState::Release,
+            },
+
+            ParserState::Series => match ev {
+                Event::Empty(e) => {
+                    let id = match find_attr_optional(e, b"id")? {
+                        Some(id) => Some(id.parse()?),
+                        None => None,
+                    };
+                    let series = ReleaseLabel {
+                        name: find_attr(e, b"name")?.to_string(),
+                        catno: find_attr_optional(e, b"catno")?.map(|c| c.to_string()),
+                        id,
+                    };
+                    self.current_item.series.push(series);
+                    ParserState::Series
                 }
                 _ => ParserState::Release,
             },

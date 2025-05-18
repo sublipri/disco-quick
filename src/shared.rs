@@ -4,16 +4,6 @@ use crate::{
 };
 use quick_xml::events::BytesStart;
 
-#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ReleaseLabel {
-    pub id: Option<u32>,
-    pub name: String,
-    pub catno: Option<String>,
-    pub entity_type: u8,
-    pub entity_type_name: String,
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Image {

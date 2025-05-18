@@ -1,5 +1,4 @@
 use crate::parser::{Parser, ParserError};
-use crate::shared::ReleaseLabel;
 use crate::util::maybe_text;
 use quick_xml::events::Event;
 use std::mem::take;
@@ -7,8 +6,18 @@ use std::mem::take;
 #[derive(Debug, Default)]
 pub struct CompanyParser {
     state: ParserState,
-    pub current_item: ReleaseLabel,
+    pub current_item: ReleaseCompany,
     pub item_ready: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ReleaseCompany {
+    pub id: Option<u32>,
+    pub name: String,
+    pub catno: Option<String>,
+    pub entity_type: u8,
+    pub entity_type_name: String,
 }
 
 #[derive(Debug, Default)]
@@ -23,12 +32,12 @@ enum ParserState {
 }
 
 impl Parser for CompanyParser {
-    type Item = ReleaseLabel;
+    type Item = ReleaseCompany;
     fn new() -> Self {
         Self::default()
     }
 
-    fn take(&mut self) -> ReleaseLabel {
+    fn take(&mut self) -> ReleaseCompany {
         self.item_ready = false;
         take(&mut self.current_item)
     }
