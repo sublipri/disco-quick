@@ -7,7 +7,7 @@ use quick_xml::events::Event;
 use std::fmt;
 use std::mem::take;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Label {
     pub id: u32,
@@ -21,7 +21,19 @@ pub struct Label {
     pub images: Vec<Image>,
 }
 
-#[derive(Clone, Debug, Default)]
+impl Label {
+    pub fn builder(id: u32, name: &str) -> LabelBuilder {
+        LabelBuilder {
+            inner: Label {
+                id,
+                name: name.to_string(),
+                ..Default::default()
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LabelInfo {
     pub id: u32,
@@ -237,5 +249,132 @@ impl Parser for LabelParser {
         };
 
         Ok(())
+    }
+}
+
+pub struct LabelBuilder {
+    inner: Label,
+}
+
+impl LabelBuilder {
+    pub fn id(mut self, id: u32) -> Self {
+        self.inner.id = id;
+        self
+    }
+
+    pub fn name(mut self, name: &str) -> Self {
+        self.inner.name = name.to_string();
+        self
+    }
+
+    pub fn contactinfo(mut self, contactinfo: &str) -> Self {
+        self.inner.contactinfo = Some(contactinfo.to_string());
+        self
+    }
+
+    pub fn profile(mut self, profile: &str) -> Self {
+        self.inner.profile = Some(profile.to_string());
+        self
+    }
+
+    pub fn parent_label(mut self, id: u32, name: &str) -> Self {
+        self.inner.parent_label = Some(LabelInfo {
+            id,
+            name: name.to_string(),
+        });
+        self
+    }
+
+    pub fn sublabel(mut self, id: u32, name: &str) -> Self {
+        self.inner.sublabels.push(LabelInfo {
+            id,
+            name: name.to_string(),
+        });
+        self
+    }
+
+    pub fn url(mut self, url: &str) -> Self {
+        self.inner.urls.push(url.to_string());
+        self
+    }
+
+    pub fn data_quality(mut self, data_quality: &str) -> Self {
+        self.inner.data_quality = data_quality.to_string();
+        self
+    }
+
+    pub fn image(mut self, ty: &str, width: i16, height: i16) -> Self {
+        self.inner.images.push(Image {
+            r#type: ty.to_string(),
+            uri: None,
+            uri150: None,
+            width,
+            height,
+        });
+        self
+    }
+
+    pub fn build(self) -> Label {
+        self.inner
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::{BufRead, BufReader, Cursor};
+
+    use super::{Label, LabelsReader};
+
+    fn parse(xml: &'static str) -> Label {
+        let reader: Box<dyn BufRead> = Box::new(BufReader::new(Cursor::new(xml)));
+        let mut reader = quick_xml::Reader::from_reader(reader);
+        reader.config_mut().trim_text(true);
+        let mut labels = LabelsReader::new(reader, Vec::new());
+        labels.next().unwrap()
+    }
+
+    #[test]
+    fn test_label_1000_20231001() {
+        let expected = Label::builder(1000, "Warner Bros. Records")
+            .contactinfo("3300 Warner Boulevard\r\nBurbank, CA 91505-4964\r\nUSA")
+            .profile("Label Code: LC 0392 / LC 00392\r\n\r\nFounded in 1958 by Jack Warner as a soundtrack factory for Warner Bros. movie studios, Warner Bros. Records and its family of subsidiary labels, which includes Reprise Records, Sire Records, Maverick Records, Warner Nashville, Warner Jazz, Warner Western, and Word Label Group encompassed a full spectrum of musical genres.\r\nAfter more than 60 years using the Warner Bros. name and logo (and following the end of a 15-year licensing agreement with AT&T/WarnerMedia, until 2018 Time Warner), the label was rebranded in May 2019 to simply [l=Warner Records].")
+            .data_quality("Needs Vote")
+            .parent_label(90718, "Warner Bros. Records Inc.")
+            .sublabel(29742, "Warner Resound")
+            .sublabel(41256, "Warner Special Products")
+            .url("http://www.warnerrecords.com")
+            .url("http://myspace.com/warnerbrosrecords")
+            .image("primary", 600, 818)
+            .image("secondary", 600, 600)
+            .build();
+        let parsed = parse(
+            r#"
+<label>
+  <images>
+    <image type="primary" uri="" uri150="" width="600" height="818"/>
+    <image type="secondary" uri="" uri150="" width="600" height="600"/>
+  </images>
+  <id>1000</id>
+  <name>Warner Bros. Records</name>
+  <contactinfo>3300 Warner Boulevard&#13;
+Burbank, CA 91505-4964&#13;
+USA</contactinfo>
+  <profile>Label Code: LC 0392 / LC 00392&#13;
+&#13;
+Founded in 1958 by Jack Warner as a soundtrack factory for Warner Bros. movie studios, Warner Bros. Records and its family of subsidiary labels, which includes Reprise Records, Sire Records, Maverick Records, Warner Nashville, Warner Jazz, Warner Western, and Word Label Group encompassed a full spectrum of musical genres.&#13;
+After more than 60 years using the Warner Bros. name and logo (and following the end of a 15-year licensing agreement with AT&amp;T/WarnerMedia, until 2018 Time Warner), the label was rebranded in May 2019 to simply [l=Warner Records].</profile>
+  <data_quality>Needs Vote</data_quality>
+  <parentLabel id="90718">Warner Bros. Records Inc.</parentLabel>
+  <urls>
+    <url>http://www.warnerrecords.com</url>
+    <url>http://myspace.com/warnerbrosrecords</url>
+  </urls>
+  <sublabels>
+    <label id="29742">Warner Resound</label>
+    <label id="41256">Warner Special Products</label>
+  </sublabels>
+</label> "#,
+        );
+        assert_eq!(expected, parsed);
     }
 }
