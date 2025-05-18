@@ -7,7 +7,7 @@ use quick_xml::events::Event;
 use std::fmt;
 use std::mem::take;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Artist {
     pub id: u32,
@@ -23,7 +23,19 @@ pub struct Artist {
     pub images: Vec<Image>,
 }
 
-#[derive(Clone, Debug, Default)]
+impl Artist {
+    pub fn builder(id: u32, name: &str) -> ArtistBuilder {
+        ArtistBuilder {
+            inner: Artist {
+                id,
+                name: name.to_string(),
+                ..Default::default()
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ArtistInfo {
     pub id: u32,
@@ -284,5 +296,247 @@ impl Parser for ArtistParser {
         };
 
         Ok(())
+    }
+}
+
+pub struct ArtistBuilder {
+    inner: Artist,
+}
+
+impl ArtistBuilder {
+    pub fn id(mut self, id: u32) -> Self {
+        self.inner.id = id;
+        self
+    }
+
+    pub fn name(mut self, name: &str) -> Self {
+        self.inner.name = name.to_string();
+        self
+    }
+
+    pub fn real_name(mut self, real_name: &str) -> Self {
+        self.inner.real_name = Some(real_name.to_string());
+        self
+    }
+
+    pub fn profile(mut self, profile: &str) -> Self {
+        self.inner.profile = Some(profile.to_string());
+        self
+    }
+
+    pub fn data_quality(mut self, data_quality: &str) -> Self {
+        self.inner.data_quality = data_quality.to_string();
+        self
+    }
+
+    pub fn name_variation(mut self, name_variation: &str) -> Self {
+        self.inner.name_variations.push(name_variation.to_owned());
+        self
+    }
+
+    pub fn url(mut self, url: &str) -> Self {
+        self.inner.urls.push(url.to_string());
+        self
+    }
+
+    pub fn alias(mut self, id: u32, name: &str) -> Self {
+        self.inner.aliases.push(ArtistInfo {
+            id,
+            name: name.to_string(),
+        });
+        self
+    }
+
+    pub fn member(mut self, id: u32, name: &str) -> Self {
+        self.inner.members.push(ArtistInfo {
+            id,
+            name: name.to_string(),
+        });
+        self
+    }
+
+    pub fn group(mut self, id: u32, name: &str) -> Self {
+        self.inner.groups.push(ArtistInfo {
+            id,
+            name: name.to_string(),
+        });
+        self
+    }
+
+    pub fn image(mut self, ty: &str, width: i16, height: i16) -> Self {
+        self.inner.images.push(Image {
+            r#type: ty.to_string(),
+            uri: None,
+            uri150: None,
+            width,
+            height,
+        });
+        self
+    }
+
+    pub fn build(self) -> Artist {
+        self.inner
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::{BufRead, BufReader, Cursor};
+
+    use super::{Artist, ArtistsReader};
+
+    fn parse(xml: &'static str) -> Artist {
+        let reader: Box<dyn BufRead> = Box::new(BufReader::new(Cursor::new(xml)));
+        let mut reader = quick_xml::Reader::from_reader(reader);
+        reader.config_mut().trim_text(true);
+        let mut artists = ArtistsReader::new(reader, Vec::new());
+        artists.next().unwrap()
+    }
+
+    #[test]
+    fn test_artist_2_20231001() {
+        let expected = Artist::builder(2, "Mr. James Barth & A.D.")
+            .real_name("Cari Lekebusch & Alexi Delano")
+            .data_quality("Correct")
+            .name_variation("MR JAMES BARTH & A. D.")
+            .name_variation("Mr Barth & A.D.")
+            .name_variation("Mr. Barth & A.D.")
+            .name_variation("Mr. James Barth & A. D.")
+            .alias(2470, "Puente Latino")
+            .alias(19536, "Yakari & Delano")
+            .alias(103709, "Crushed Insect & The Sick Puppy")
+            .alias(384581, "ADCL")
+            .alias(1779857, "Alexi Delano & Cari Lekebusch")
+            .member(26, "Alexi Delano")
+            .member(27, "Cari Lekebusch")
+            .build();
+        let parsed = parse(
+            r#"
+<artist>
+  <id>2</id>
+  <name>Mr. James Barth &amp; A.D.</name>
+  <realname>Cari Lekebusch &amp; Alexi Delano</realname>
+  <profile>
+  </profile>
+  <data_quality>Correct</data_quality>
+  <namevariations>
+    <name>MR JAMES BARTH &amp; A. D.</name>
+    <name>Mr Barth &amp; A.D.</name>
+    <name>Mr. Barth &amp; A.D.</name>
+    <name>Mr. James Barth &amp; A. D.</name>
+  </namevariations>
+  <aliases>
+    <name id="2470">Puente Latino</name>
+    <name id="19536">Yakari &amp; Delano</name>
+    <name id="103709">Crushed Insect &amp; The Sick Puppy</name>
+    <name id="384581">ADCL</name>
+    <name id="1779857">Alexi Delano &amp; Cari Lekebusch</name>
+  </aliases>
+  <members>
+    <id>26</id>
+    <name id="26">Alexi Delano</name>
+    <id>27</id>
+    <name id="27">Cari Lekebusch</name>
+  </members>
+</artist>"#,
+        );
+        assert_eq!(expected, parsed);
+    }
+    #[test]
+    fn test_artist_2_20250501() {
+        let expected = Artist::builder(2, "Mr. James Barth & A.D.")
+            .data_quality("Correct")
+            .name_variation("MR JAMES BARTH & A. D.")
+            .name_variation("Mr Barth & A.D.")
+            .name_variation("Mr. Barth & A.D.")
+            .name_variation("Mr. James Barth & A. D.")
+            .alias(2470, "Puente Latino")
+            .alias(19536, "Yakari & Delano")
+            .alias(103709, "Crushed Insect & The Sick Puppy")
+            .alias(384581, "ADCL")
+            .alias(1779857, "Alexi Delano & Cari Lekebusch")
+            .member(26, "Alexi Delano")
+            .member(27, "Cari Lekebusch")
+            .build();
+        let parsed = parse(
+            r#"
+<artist>
+  <id>2</id>
+  <name>Mr. James Barth &amp; A.D.</name>
+  <data_quality>Correct</data_quality>
+  <namevariations>
+    <name>MR JAMES BARTH &amp; A. D.</name>
+    <name>Mr Barth &amp; A.D.</name>
+    <name>Mr. Barth &amp; A.D.</name>
+    <name>Mr. James Barth &amp; A. D.</name>
+  </namevariations>
+  <aliases>
+    <name id="2470">Puente Latino</name>
+    <name id="19536">Yakari &amp; Delano</name>
+    <name id="103709">Crushed Insect &amp; The Sick Puppy</name>
+    <name id="384581">ADCL</name>
+    <name id="1779857">Alexi Delano &amp; Cari Lekebusch</name>
+  </aliases>
+  <members>
+    <name id="26">Alexi Delano</name>
+    <name id="27">Cari Lekebusch</name>
+  </members>
+</artist>"#,
+        );
+        assert_eq!(expected, parsed);
+    }
+
+    #[test]
+    fn test_artist_26_20231001() {
+        let expected = Artist::builder(26, "Alexi Delano")
+            .profile("Alexi Delano ‘s music production dwells in perfect balance between shiny minimalism and dark vivacious techno. With more than two decades on stage he has been able to combine different roots and facets of the contemporary music scene.\r\nBorn in Chile, raised in Sweden and later on adopted by New York City, Alexi was part of the Swedish wave of electronic music producers of the mid 90’s such as Adam Beyer, Cari Lekebusch, Jesper Dahlback and Joel Mull. Moving from Scandinavia to New York influenced him to combine the heavy compressed Swedish sound with the vibrancy of the creative music scene of Brooklyn.\r\n\r\nThroughout his music career, Alexi has been nominated for the Swedish Music Award ‘P3 Guld’ (an alternative to the Swedish Grammy), produced six albums and released countless records on established labels such as the iconic Swedish label SVEK, Plus 8, Minus, Hybrid, Drumcode, Visionquest, Spectral Sound, Get Physical, Poker Flat and many more. \r\nWith a music production and DJ style swinging between house and techno, he is consistently reinventing himself with each new release.")
+            .data_quality("Needs Vote")
+            .name_variation("A Delano")
+            .name_variation("A. D.")
+            .url("https://www.facebook.com/alexidelanomusic")
+            .url("http://www.soundcloud.com/alexidelano")
+            .url("http://twitter.com/AlexiDelano")
+            .alias(50, "ADNY")
+            .alias(937, "G.O.L.")
+            .group(2, "Mr. James Barth & A.D.")
+            .group(254, "ADNY & The Persuader")
+            .image("primary", 600, 269)
+            .image("secondary", 600, 400)
+            .build();
+        let parsed = parse(
+            r#"
+<artist>
+  <images>
+    <image type="primary" uri="" uri150="" width="600" height="269"/>
+    <image type="secondary" uri="" uri150="" width="600" height="400"/>
+  </images>
+  <id>26</id>
+  <name>Alexi Delano</name>
+  <profile>Alexi Delano ‘s music production dwells in perfect balance between shiny minimalism and dark vivacious techno. With more than two decades on stage he has been able to combine different roots and facets of the contemporary music scene.&#13;
+Born in Chile, raised in Sweden and later on adopted by New York City, Alexi was part of the Swedish wave of electronic music producers of the mid 90’s such as Adam Beyer, Cari Lekebusch, Jesper Dahlback and Joel Mull. Moving from Scandinavia to New York influenced him to combine the heavy compressed Swedish sound with the vibrancy of the creative music scene of Brooklyn.&#13;
+&#13;
+Throughout his music career, Alexi has been nominated for the Swedish Music Award ‘P3 Guld’ (an alternative to the Swedish Grammy), produced six albums and released countless records on established labels such as the iconic Swedish label SVEK, Plus 8, Minus, Hybrid, Drumcode, Visionquest, Spectral Sound, Get Physical, Poker Flat and many more. &#13;
+With a music production and DJ style swinging between house and techno, he is consistently reinventing himself with each new release.</profile>
+  <data_quality>Needs Vote</data_quality>
+  <urls>
+    <url>https://www.facebook.com/alexidelanomusic</url>
+    <url>http://www.soundcloud.com/alexidelano</url>
+    <url>http://twitter.com/AlexiDelano</url>
+  </urls>
+  <namevariations>
+    <name>A Delano</name>
+    <name>A. D.</name>
+  </namevariations>
+  <aliases>
+    <name id="50">ADNY</name>
+    <name id="937">G.O.L.</name>
+  </aliases>
+  <groups>
+    <name id="2">Mr. James Barth &amp; A.D.</name>
+    <name id="254">ADNY &amp; The Persuader</name>
+  </groups>
+</artist>"#,
+        );
+        assert_eq!(expected, parsed);
     }
 }

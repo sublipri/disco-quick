@@ -14,7 +14,7 @@ pub struct ReleaseLabel {
     pub entity_type_name: String,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Image {
     pub r#type: String,
