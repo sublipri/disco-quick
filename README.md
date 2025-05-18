@@ -8,38 +8,36 @@ Disco Quick is a library for processing the [Discogs](https://www.discogs.com) m
 use disco_quick::DiscogsReader;
 use std::env;
 
-fn main() {
-    for arg in env::args().skip(1) {
-        let reader = match DiscogsReader::from_path(arg.as_ref()) {
-            Ok(reader) => reader,
-            Err(e) => {
-                eprintln!("Error reading {arg}. {e}");
-                continue;
+for arg in env::args().skip(1) {
+    let reader = match DiscogsReader::from_path(arg.as_ref()) {
+        Ok(reader) => reader,
+        Err(e) => {
+            eprintln!("Error reading {arg}. {e}");
+            continue;
+        }
+    };
+    match reader {
+        DiscogsReader::Artists(artists) => {
+            for artist in artists.take(100) {
+                println!("Artist ID {} is {}", artist.id, artist);
             }
-        };
-        match reader {
-            DiscogsReader::Artists(artists) => {
-                for artist in artists.take(100) {
-                    println!("Artist ID {} is {}", artist.id, artist);
-                }
+        }
+        DiscogsReader::Labels(labels) => {
+            for label in labels.take(100) {
+                println!("Label ID {} is {}", label.id, label);
             }
-            DiscogsReader::Labels(labels) => {
-                for label in labels.take(100) {
-                    println!("Label ID {} is {}", label.id, label);
-                }
+        }
+        DiscogsReader::Masters(masters) => {
+            for master in masters.take(100) {
+                println!("Master ID {} is {}", master.id, master);
             }
-            DiscogsReader::Masters(masters) => {
-                for master in masters.take(100) {
-                    println!("Master ID {} is {}", master.id, master);
-                }
+        }
+        DiscogsReader::Releases(releases) => {
+            for release in releases.take(100) {
+                println!("Release ID {} is {}", release.id, release);
             }
-            DiscogsReader::Releases(releases) => {
-                for release in releases.take(100) {
-                    println!("Release ID {} is {}", release.id, release);
-                }
-            }
-        };
-    }
+        }
+    };
 }
 ```
 
