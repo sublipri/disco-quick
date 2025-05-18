@@ -47,7 +47,7 @@ fn main() {
 
 Running `examples/count.rs` with the 2023-10-01 dumps on a Ryzen 3900x with DDR4-3200 RAM produced the following results:
 
-```
+```bash
 Parsed 8823813 artists in 20.476s (430914.2/s)
 Parsed 2044219 labels in 03.186s (641475.25/s)
 Parsed 2247215 masters in 23.626s (95113.26/s)
