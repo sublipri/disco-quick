@@ -3,7 +3,7 @@ use crate::util::find_attr;
 use quick_xml::events::Event;
 use std::mem::take;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Video {
     pub src: String,

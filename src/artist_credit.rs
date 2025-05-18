@@ -5,7 +5,7 @@ use crate::{
 use quick_xml::events::Event;
 use std::mem::take;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ArtistCredit {
     pub id: u32,
@@ -14,6 +14,18 @@ pub struct ArtistCredit {
     pub join: Option<String>,
     pub role: Option<String>,
     pub tracks: Option<String>,
+}
+
+impl ArtistCredit {
+    pub fn builder(id: u32, name: &str) -> ArtistCreditBuilder {
+        ArtistCreditBuilder {
+            inner: ArtistCredit {
+                id,
+                name: name.to_string(),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -137,5 +149,31 @@ impl Parser for ArtistCreditParser {
             },
         };
         Ok(())
+    }
+}
+
+pub struct ArtistCreditBuilder {
+    inner: ArtistCredit,
+}
+
+impl ArtistCreditBuilder {
+    pub fn anv(mut self, anv: &str) -> Self {
+        self.inner.anv = Some(anv.to_string());
+        self
+    }
+    pub fn join(mut self, join: &str) -> Self {
+        self.inner.join = Some(join.to_string());
+        self
+    }
+    pub fn role(mut self, role: &str) -> Self {
+        self.inner.role = Some(role.to_string());
+        self
+    }
+    pub fn tracks(mut self, tracks: &str) -> Self {
+        self.inner.tracks = Some(tracks.to_string());
+        self
+    }
+    pub fn build(self) -> ArtistCredit {
+        self.inner
     }
 }

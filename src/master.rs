@@ -1,4 +1,6 @@
-use crate::artist_credit::{get_credit_string, ArtistCredit, ArtistCreditParser};
+use crate::artist_credit::{
+    get_credit_string, ArtistCredit, ArtistCreditBuilder, ArtistCreditParser,
+};
 use crate::parser::{Parser, ParserError};
 use crate::reader::XmlReader;
 use crate::shared::Image;
@@ -9,7 +11,7 @@ use quick_xml::events::Event;
 use std::fmt;
 use std::mem::take;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Master {
     pub id: u32,
@@ -23,6 +25,17 @@ pub struct Master {
     pub artists: Vec<ArtistCredit>,
     pub images: Vec<Image>,
     pub videos: Vec<Video>,
+}
+impl Master {
+    pub fn builder(id: u32, title: &str) -> MasterBuilder {
+        MasterBuilder {
+            inner: Master {
+                id,
+                title: title.to_string(),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 impl fmt::Display for Master {
@@ -230,5 +243,190 @@ impl Parser for MasterParser {
         };
 
         Ok(())
+    }
+}
+
+pub struct MasterBuilder {
+    inner: Master,
+}
+
+impl MasterBuilder {
+    pub fn id(mut self, id: u32) -> Self {
+        self.inner.id = id;
+        self
+    }
+
+    pub fn title(mut self, title: &str) -> Self {
+        self.inner.title = title.to_string();
+        self
+    }
+
+    pub fn main_release(mut self, id: u32) -> Self {
+        self.inner.main_release = id;
+        self
+    }
+
+    pub fn notes(mut self, notes: &str) -> Self {
+        self.inner.notes = Some(notes.to_string());
+        self
+    }
+
+    pub fn year(mut self, year: u16) -> Self {
+        self.inner.year = year;
+        self
+    }
+
+    pub fn genre(mut self, genre: &str) -> Self {
+        self.inner.genres.push(genre.to_string());
+        self
+    }
+
+    pub fn style(mut self, style: &str) -> Self {
+        self.inner.styles.push(style.to_string());
+        self
+    }
+
+    pub fn data_quality(mut self, data_quality: &str) -> Self {
+        self.inner.data_quality = data_quality.to_string();
+        self
+    }
+
+    pub fn artist(mut self, credit: ArtistCreditBuilder) -> Self {
+        self.inner.artists.push(credit.build());
+        self
+    }
+
+    pub fn image(mut self, ty: &str, width: i16, height: i16) -> Self {
+        self.inner.images.push(Image {
+            r#type: ty.to_string(),
+            uri: None,
+            uri150: None,
+            width,
+            height,
+        });
+        self
+    }
+
+    pub fn video(mut self, src: &str, duration: u32, title: &str, description: &str) -> Self {
+        self.inner.videos.push(Video {
+            src: src.to_string(),
+            duration,
+            title: title.to_string(),
+            description: description.to_string(),
+            embed: true,
+        });
+        self
+    }
+
+    pub fn build(self) -> Master {
+        self.inner
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::io::{BufRead, BufReader, Cursor};
+
+    use crate::artist_credit::{ArtistCredit, ArtistCreditBuilder};
+
+    use super::{Master, MastersReader};
+
+    fn parse(xml: &'static str) -> Master {
+        let reader: Box<dyn BufRead> = Box::new(BufReader::new(Cursor::new(xml)));
+        let mut reader = quick_xml::Reader::from_reader(reader);
+        reader.config_mut().trim_text(true);
+        let mut labels = MastersReader::new(reader, Vec::new());
+        labels.next().unwrap()
+    }
+
+    fn credit(id: u32, name: &str) -> ArtistCreditBuilder {
+        ArtistCredit::builder(id, name)
+    }
+
+    #[test]
+    fn test_master_830352_20231001() {
+        let expected = Master::builder(830352, "What Is The Time, Mr. Templar? / The Real Jazz")
+            .main_release(1671981)
+            .year(2009)
+            .genre("Electronic")
+            .style("Techno")
+            .style("Tech House")
+            .data_quality("Correct")
+            .artist(credit(239, "Jesper Dahlbäck").join("/"))
+            .artist(credit(1654, "DK").anv("Dahlbäck & Krome"))
+            .image("primary", 600, 600)
+            .image("secondary", 600, 600)
+            .video(
+                "https://www.youtube.com/watch?v=1andhkV72eo",
+                311,
+                 "JESPER DAHLBÄCK - WHAT IS THE TIME, MR. TEMPLAR? (PND02)",
+                 "JESPER DAHLBÄCK - WHAT IS THE TIME, MR. TEMPLAR? (PND02)\n\n#pvnx #thismustbethetrack #trackoftheday #russianadvisor #bvckgrnd #vinyl #vinylcommunity #vinylcollection #recordcollector #vinyladdict #records #music #musiclover #musicblog #vinyloftheday  #mus",
+            )
+            .video(
+                "https://www.youtube.com/watch?v=IWRv_Ye03cU",
+                315,
+                "J Dahlbäck - The Persuader - What Is The Time, Mr Templar?",
+                "From the LP: J. Dahlbäck - The Persuader - Label: Svek - Released: 1997\n\nProblem with the video? Please tell me and it will be removed immediately!"
+            )
+            .build();
+        let parsed = parse(
+            r#"
+<master id="830352">
+  <main_release>1671981</main_release>
+  <images>
+    <image type="primary" uri="" uri150="" width="600" height="600"/>
+    <image type="secondary" uri="" uri150="" width="600" height="600"/>
+  </images>
+  <artists>
+    <artist>
+      <id>239</id>
+      <name>Jesper Dahlbäck</name>
+      <anv>
+      </anv>
+      <join>/</join>
+      <role>
+      </role>
+      <tracks>
+      </tracks>
+    </artist>
+    <artist>
+      <id>1654</id>
+      <name>DK</name>
+      <anv>Dahlbäck &amp; Krome</anv>
+      <join>
+      </join>
+      <role>
+      </role>
+      <tracks>
+      </tracks>
+    </artist>
+  </artists>
+  <genres>
+    <genre>Electronic</genre>
+  </genres>
+  <styles>
+    <style>Techno</style>
+    <style>Tech House</style>
+  </styles>
+  <year>2009</year>
+  <title>What Is The Time, Mr. Templar? / The Real Jazz</title>
+  <data_quality>Correct</data_quality>
+  <videos>
+    <video src="https://www.youtube.com/watch?v=1andhkV72eo" duration="311" embed="true">
+      <title>JESPER DAHLBÄCK - WHAT IS THE TIME, MR. TEMPLAR? (PND02)</title>
+      <description>JESPER DAHLBÄCK - WHAT IS THE TIME, MR. TEMPLAR? (PND02)
+
+#pvnx #thismustbethetrack #trackoftheday #russianadvisor #bvckgrnd #vinyl #vinylcommunity #vinylcollection #recordcollector #vinyladdict #records #music #musiclover #musicblog #vinyloftheday  #mus</description>
+    </video>
+    <video src="https://www.youtube.com/watch?v=IWRv_Ye03cU" duration="315" embed="true">
+      <title>J Dahlbäck - The Persuader - What Is The Time, Mr Templar?</title>
+      <description>From the LP: J. Dahlbäck - The Persuader - Label: Svek - Released: 1997
+
+Problem with the video? Please tell me and it will be removed immediately!</description>
+    </video>
+  </videos>
+</master>
+        "#,
+        );
+        assert_eq!(expected, parsed);
     }
 }
