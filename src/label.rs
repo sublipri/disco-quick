@@ -178,7 +178,7 @@ impl Parser for LabelParser {
             ParserState::ParentLabel => match ev {
                 Event::Text(e) => {
                     let Some(id) = self.current_parent_id else {
-                        return Err(ParserError::MissingData);
+                        return Err(ParserError::MissingData("Label parent ID"));
                     };
                     let parent_label = LabelInfo {
                         id,
@@ -204,7 +204,7 @@ impl Parser for LabelParser {
             ParserState::Sublabel => match ev {
                 Event::Text(e) => {
                     let Some(id) = self.current_sublabel_id else {
-                        return Err(ParserError::MissingData);
+                        return Err(ParserError::MissingData("Label sublabel ID"));
                     };
                     let sublabel = LabelInfo {
                         id,

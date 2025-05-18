@@ -23,6 +23,6 @@ pub enum ParserError {
     ParseBool(#[from] std::str::ParseBoolError),
     #[error("missing an expected XML attribute: {0}")]
     MissingAttr(&'static str),
-    #[error("missing data that should have already been parsed")]
-    MissingData,
+    #[error("missing data that should have already been parsed: {0}")]
+    MissingData(&'static str),
 }

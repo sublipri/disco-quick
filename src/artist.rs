@@ -197,7 +197,7 @@ impl Parser for ArtistParser {
                 }
                 Event::Text(e) => {
                     let Some(alias) = self.current_item.aliases.last_mut() else {
-                        return Err(ParserError::MissingData);
+                        return Err(ParserError::MissingData("Artist alias ID"));
                     };
                     alias.name = e.unescape()?.to_string();
                     ParserState::Aliases
@@ -230,7 +230,7 @@ impl Parser for ArtistParser {
             ParserState::MemberName => match ev {
                 Event::Text(e) => {
                     let Some(member) = self.current_item.members.last_mut() else {
-                        return Err(ParserError::MissingData);
+                        return Err(ParserError::MissingData("Artist member ID"));
                     };
                     member.name = e.unescape()?.to_string();
                     ParserState::Members
@@ -249,7 +249,7 @@ impl Parser for ArtistParser {
                 }
                 Event::Text(e) => {
                     let Some(group) = self.current_item.groups.last_mut() else {
-                        return Err(ParserError::MissingData);
+                        return Err(ParserError::MissingData("Artist group ID"));
                     };
                     group.name = e.unescape()?.to_string();
                     ParserState::Groups

@@ -269,7 +269,7 @@ impl Parser for ReleaseParser {
                 Event::Text(e) => {
                     let description = e.unescape()?.to_string();
                     let Some(format) = self.current_item.formats.last_mut() else {
-                        return Err(ParserError::MissingData);
+                        return Err(ParserError::MissingData("Release format"));
                     };
                     format.descriptions.push(description);
                     ParserState::Format
