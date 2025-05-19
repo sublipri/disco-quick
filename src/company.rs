@@ -10,7 +10,7 @@ pub struct CompanyParser {
     pub item_ready: bool,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ReleaseCompany {
     pub id: Option<u32>,

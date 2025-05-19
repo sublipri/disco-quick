@@ -324,6 +324,7 @@ impl MasterBuilder {
 }
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::io::{BufRead, BufReader, Cursor};
 
     use crate::artist_credit::{ArtistCredit, ArtistCreditBuilder};

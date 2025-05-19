@@ -4,7 +4,7 @@ use crate::util::maybe_text;
 use quick_xml::events::Event;
 use std::mem::take;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Track {
     pub position: String,

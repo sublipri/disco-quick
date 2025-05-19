@@ -321,6 +321,7 @@ impl LabelBuilder {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::io::{BufRead, BufReader, Cursor};
 
     use super::{Label, LabelsReader};
