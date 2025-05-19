@@ -124,6 +124,7 @@ enum ParserState {
     Format,
     Companies,
     Identifiers,
+    Images,
 }
 
 #[derive(Debug, Default)]
@@ -184,6 +185,7 @@ impl Parser for ReleaseParser {
                     b"formats" => ParserState::Format,
                     b"identifiers" => ParserState::Identifiers,
                     b"companies" => ParserState::Companies,
+                    b"images" => ParserState::Images,
                     _ => ParserState::Release,
                 },
                 _ => ParserState::Release,
@@ -366,6 +368,18 @@ impl Parser for ReleaseParser {
                     ParserState::Videos
                 }
             },
+
+            ParserState::Images => match ev {
+                Event::Empty(e) if e.local_name().as_ref() == b"image" => {
+                    let image = Image::from_event(e)?;
+                    self.current_item.images.push(image);
+                    ParserState::Images
+                }
+                Event::End(e) if e.local_name().as_ref() == b"images" => ParserState::Release,
+
+                _ => ParserState::Images,
+            },
+
 
             ParserState::TrackList => match ev {
                 Event::End(e) if e.local_name().as_ref() == b"tracklist" => ParserState::Release,
