@@ -36,10 +36,11 @@ pub enum DiscogsReader {
 impl DiscogsReader {
     /// Open an XML file at the given path, and return the appropriate reader based on its contents.
     /// The file can be either uncompressed or gzip compressed.
-    pub fn from_path(path: &Path) -> Result<DiscogsReader, ReaderError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<DiscogsReader, ReaderError> {
         // Since GzDecoder doesn't impl Seek, we open the file twice. Once to read the start tag,
         // then again so the parsers can read from the start of the file, which is necessary for
         // old versions of the dump that contain e.g. <artist> as the first tag, not <artists>
+        let path = path.as_ref();
         let start_tag = {
             let xml_reader = get_xml_reader(path)?;
             read_start_tag(xml_reader)?

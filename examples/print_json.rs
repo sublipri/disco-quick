@@ -5,7 +5,7 @@ use std::env;
 // cargo run --release --features serde --example print_json <PATH>...
 fn main() {
     for arg in env::args().skip(1) {
-        let reader = match DiscogsReader::from_path(arg.as_ref()) {
+        let reader = match DiscogsReader::from_path(&arg) {
             Ok(reader) => reader,
             Err(e) => {
                 eprintln!("Error reading {arg}. {e}");
