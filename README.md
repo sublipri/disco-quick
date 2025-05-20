@@ -5,38 +5,15 @@ Disco Quick is a library for processing the [Discogs](https://www.discogs.com) m
 ## Example:
 
 ```rust
-use disco_quick::DiscogsReader;
-use std::env;
+use disco_quick::{DiscogsReader, DiscogsReader::*};
 
-for arg in env::args().skip(1) {
-    let reader = match DiscogsReader::from_path(&arg) {
-        Ok(reader) => reader,
-        Err(e) => {
-            eprintln!("Error reading {arg}. {e}");
-            continue;
-        }
-    };
-    match reader {
-        DiscogsReader::Artists(artists) => {
-            for artist in artists.take(100) {
-                println!("Artist ID {} is {}", artist.id, artist);
-            }
-        }
-        DiscogsReader::Labels(labels) => {
-            for label in labels.take(100) {
-                println!("Label ID {} is {}", label.id, label);
-            }
-        }
-        DiscogsReader::Masters(masters) => {
-            for master in masters.take(100) {
-                println!("Master ID {} is {}", master.id, master);
-            }
-        }
-        DiscogsReader::Releases(releases) => {
-            for release in releases.take(100) {
-                println!("Release ID {} is {}", release.id, release);
-            }
-        }
+for arg in std::env::args().skip(1) {
+    match DiscogsReader::from_path(&arg) {
+        Ok(Artists(artists)) => artists.take(1).for_each(|a| println!("{a:#?}")),
+        Ok(Labels(labels)) => labels.take(1).for_each(|l| println!("{l:#?}")),
+        Ok(Masters(masters)) => masters.take(1).for_each(|m| println!("{m:#?}")),
+        Ok(Releases(releases)) => releases.take(1).for_each(|r| println!("{r:#?}")),
+        Err(e) => eprintln!("Error reading {arg}: {e}"),
     };
 }
 ```
