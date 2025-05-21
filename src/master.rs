@@ -335,8 +335,7 @@ mod tests {
         let reader: Box<dyn BufRead> = Box::new(BufReader::new(Cursor::new(xml)));
         let mut reader = quick_xml::Reader::from_reader(reader);
         reader.config_mut().trim_text(true);
-        let mut labels = MastersReader::new(reader, Vec::new());
-        labels.next().unwrap()
+        MastersReader::new(reader, Vec::new()).next().unwrap()
     }
 
     fn credit(id: u32, name: &str) -> ArtistCreditBuilder {
