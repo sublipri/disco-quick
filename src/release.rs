@@ -17,7 +17,7 @@ use std::mem::take;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Release {
     pub id: u32,
-    pub status: String,
+    pub status: Option<String>,
     pub title: String,
     pub artists: Vec<ArtistCredit>,
     pub country: String,
@@ -174,7 +174,8 @@ impl Parser for ReleaseParser {
                 Event::Start(e) if e.local_name().as_ref() == b"release" => {
                     self.current_item.id = find_attr(e, b"id")?.parse()?;
                     debug!("Began parsing Release {}", self.current_item.id);
-                    self.current_item.status = find_attr(e, b"status")?.to_string();
+                    self.current_item.status =
+                        find_attr_optional(e, b"status")?.map(|s| s.to_string());
                     ParserState::Release
                 }
                 Event::Start(e) if e.local_name().as_ref() == b"master_id" => {
@@ -434,7 +435,7 @@ impl ReleaseBuilder {
     }
 
     pub fn status(mut self, status: &str) -> Self {
-        self.inner.status = status.to_string();
+        self.inner.status = Some(status.to_string());
         self
     }
 
@@ -636,6 +637,200 @@ mod tests {
 
     fn credit(id: u32, name: &str) -> ArtistCreditBuilder {
         ArtistCredit::builder(id, name)
+    }
+
+    #[test]
+    fn test_release_40299_20260901() {
+        let expected = Release::builder(40299, "New Beat - Take 4")
+            .artist(credit(194, "Various").build())
+            .country("Belgium")
+            .label(Some(9789), "Subway Dance", Some("Subway Dance 4000"))
+            .label(Some(9789), "Subway Dance", Some("SD 4000-LP"))
+            .series(Some(183060), "Take", Some("4"))
+            .series(Some(475876), "A.B.-Sounds", None)
+            .released("1989")
+            .notes("Made in Belgium.")
+            .genre("Electronic")
+            .style("Acid")
+            .style("New Beat")
+            .master_id(35574)
+            .is_main_release(true)
+            .data_quality("Needs Vote")
+            .video("https://www.youtube.com/watch?v=Txq736EVa80", 181, "Tragic Error - Tanzen (1989)", "A Belgian New Beat classic!\r\n\r\nTrack produced and written by Patrick De Meyer.")
+            .video("https://www.youtube.com/watch?v=6KwqUVPJ-xc", 303, "Westbam-Monkey say monkey do", "Classic house from 1988,Label-Dance Trax,catalog#: DRX 612,format 12\" vinyl Germany 1988")
+            .extraartist(
+                credit(118541, "Maurice Engelen")
+                    .anv("The Maurice Engelen")
+                    .role("Compiled By"),
+            )
+            .extraartist(credit(501662, "Tejo De Roeck").role("Cover"))
+            .extraartist(credit(11701904, "Boy Toy (6)").role("Model"))
+            .extraartist(credit(3601091, "Annick Wets").role("Photography By [Photo]"))
+            .track("A1", "Tanzen")
+            .duration("3:37")
+            .artist(credit(7542, "Tragic Error"))
+            .extraartist(
+                credit(116415, "Patrick De Meyer")
+                    .anv("P. De Meyer")
+                    .role("Written-By"),
+            )
+            .build_track()
+            .track("A2", "New Beat, A Musical Phenomenon")
+            .duration("3:40")
+            .artist(credit(32087, "The Brotherhood Of Sleep"))
+            .extraartist(credit(221853, "Joey Morton").anv("Morton").role("Written-By"))
+            .extraartist(credit(25528, "Sherman").role("Written-By"))
+            .build_track()
+            .format("1", "Vinyl", None, &["LP", "Compilation"])
+            .company(216650, "BE's Songs", None, 21, "Published By")
+            .company(57563, "Music Man Import", None, 21, "Published By")
+            .identifier("Rights Society", None, Some("SABAM-BIEM"))
+            .identifier("Matrix / Runout", Some("Side A"), Some("SD 4000-A2"))
+            .identifier("Matrix / Runout", Some("Side B"), Some("SD 4000-B1 FOON"))
+            .build();
+
+        let parsed = parse(
+            r#"
+<release id="40299">
+  <artists>
+    <artist>
+      <id>194</id>
+      <name>Various</name>
+    </artist>
+  </artists>
+  <title>New Beat - Take 4</title>
+  <labels>
+    <label name="Subway Dance" catno="Subway Dance 4000" id="9789"/>
+    <label name="Subway Dance" catno="SD 4000-LP" id="9789"/>
+  </labels>
+  <series>
+    <series name="Take" catno="4" id="183060"/>
+    <series name="A.B.-Sounds" catno="" id="475876"/>
+  </series>
+  <extraartists>
+    <artist>
+      <id>118541</id>
+      <name>Maurice Engelen</name>
+      <anv>The Maurice Engelen</anv>
+      <role>Compiled By</role>
+    </artist>
+    <artist>
+      <id>501662</id>
+      <name>Tejo De Roeck</name>
+      <role>Cover</role>
+    </artist>
+    <artist>
+      <id>11701904</id>
+      <name>Boy Toy (6)</name>
+      <role>Model</role>
+    </artist>
+    <artist>
+      <id>3601091</id>
+      <name>Annick Wets</name>
+      <role>Photography By [Photo]</role>
+    </artist>
+  </extraartists>
+  <formats>
+    <format name="Vinyl" qty="1" text="">
+      <descriptions>
+        <description>LP</description>
+        <description>Compilation</description>
+      </descriptions>
+    </format>
+  </formats>
+  <genres>
+    <genre>Electronic</genre>
+  </genres>
+  <styles>
+    <style>Acid</style>
+    <style>New Beat</style>
+  </styles>
+  <country>Belgium</country>
+  <released>1989</released>
+  <notes>Made in Belgium.</notes>
+  <data_quality>Needs Vote</data_quality>
+  <master_id is_main_release="true">35574</master_id>
+  <tracklist>
+    <track>
+      <position>A1</position>
+      <title>Tanzen</title>
+      <duration>3:37</duration>
+      <artists>
+        <artist>
+          <id>7542</id>
+          <name>Tragic Error</name>
+        </artist>
+      </artists>
+      <extraartists>
+        <artist>
+          <id>116415</id>
+          <name>Patrick De Meyer</name>
+          <anv>P. De Meyer</anv>
+          <role>Written-By</role>
+        </artist>
+      </extraartists>
+    </track>
+    <track>
+      <position>A2</position>
+      <title>New Beat, A Musical Phenomenon</title>
+      <duration>3:40</duration>
+      <artists>
+        <artist>
+          <id>32087</id>
+          <name>The Brotherhood Of Sleep</name>
+        </artist>
+      </artists>
+      <extraartists>
+        <artist>
+          <id>221853</id>
+          <name>Joey Morton</name>
+          <anv>Morton</anv>
+          <role>Written-By</role>
+        </artist>
+        <artist>
+          <id>25528</id>
+          <name>Sherman</name>
+          <role>Written-By</role>
+        </artist>
+      </extraartists>
+    </track>
+  </tracklist>
+  <identifiers>
+    <identifier type="Rights Society" description="" value="SABAM-BIEM"/>
+    <identifier type="Matrix / Runout" description="Side A" value="SD 4000-A2"/>
+    <identifier type="Matrix / Runout" description="Side B" value="SD 4000-B1 FOON"/>
+  </identifiers>
+  <videos>
+    <video src="https://www.youtube.com/watch?v=Txq736EVa80" duration="181" embed="true">
+      <title>Tragic Error - Tanzen (1989)</title>
+      <description>A Belgian New Beat classic!&#13;
+&#13;
+Track produced and written by Patrick De Meyer.</description>
+    </video>
+    <video src="https://www.youtube.com/watch?v=6KwqUVPJ-xc" duration="303" embed="true">
+      <title>Westbam-Monkey say monkey do</title>
+      <description>Classic house from 1988,Label-Dance Trax,catalog#: DRX 612,format 12" vinyl Germany 1988</description>
+    </video>
+  </videos>
+  <companies>
+    <company>
+      <id>216650</id>
+      <name>BE's Songs</name>
+      <entity_type>21</entity_type>
+      <entity_type_name>Published By</entity_type_name>
+    </company>
+    <company>
+      <id>57563</id>
+      <name>Music Man Import</name>
+      <entity_type>21</entity_type>
+      <entity_type_name>Published By</entity_type_name>
+    </company>
+  </companies>
+</release>
+        "#,
+        );
+        assert_eq!(expected, parsed);
+        assert_eq!(None, parsed.status);
     }
 
     #[test]
