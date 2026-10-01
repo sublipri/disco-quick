@@ -1,10 +1,9 @@
-use disco_quick::DiscogsReader;
-use std::env;
+use disco_quick::DiscogsReader::{self, *};
 use std::time::{Duration, Instant};
 
 /// Count the total items in a dump and report the parsing time.
 fn main() {
-    for arg in env::args().skip(1) {
+    for arg in std::env::args().skip(1) {
         let reader = match DiscogsReader::from_path(&arg) {
             Ok(reader) => reader,
             Err(e) => {
@@ -13,13 +12,13 @@ fn main() {
             }
         };
         let reader_name = reader.to_string();
-        println!("Processing {}...", arg);
+        println!("Processing {arg}...");
         let now = Instant::now();
         let count = match reader {
-            DiscogsReader::Artists(artists) => artists.count(),
-            DiscogsReader::Labels(labels) => labels.count(),
-            DiscogsReader::Masters(masters) => masters.count(),
-            DiscogsReader::Releases(releases) => releases.count(),
+            Releases(iter) => iter.count(),
+            Masters(iter) => iter.count(),
+            Artists(iter) => iter.count(),
+            Labels(iter) => iter.count(),
         };
         let duration = now.elapsed();
         let per_second = count as f32 / duration.as_secs_f32();
@@ -39,8 +38,8 @@ fn format_duration(d: Duration) -> String {
     if seconds > 60 {
         let minutes = seconds / 60;
         let seconds = seconds % 60;
-        format!("{:02}m{:02}.{:03}s", minutes, seconds, millis)
+        format!("{minutes:02}m{seconds:02}.{millis:03}s")
     } else {
-        format!("{:02}.{:03}s", seconds, millis)
+        format!("{seconds:02}.{millis:03}s")
     }
 }

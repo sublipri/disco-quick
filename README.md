@@ -5,14 +5,15 @@ Disco Quick is a library for processing the [Discogs](https://www.discogs.com) m
 ## Example:
 
 ```rust
-use disco_quick::{DiscogsReader, DiscogsReader::*};
+use disco_quick::DiscogsReader::{self, *};
 
+// pretty-print the first item from each file passed on the command line
 for arg in std::env::args().skip(1) {
     match DiscogsReader::from_path(&arg) {
-        Ok(Artists(artists)) => artists.take(1).for_each(|a| println!("{a:#?}")),
-        Ok(Labels(labels)) => labels.take(1).for_each(|l| println!("{l:#?}")),
-        Ok(Masters(masters)) => masters.take(1).for_each(|m| println!("{m:#?}")),
-        Ok(Releases(releases)) => releases.take(1).for_each(|r| println!("{r:#?}")),
+        Ok(Releases(iter)) => iter.take(1).for_each(|r| println!("{r:#?}")),
+        Ok(Artists(iter)) => iter.take(1).for_each(|a| println!("{a:#?}")),
+        Ok(Masters(iter)) => iter.take(1).for_each(|m| println!("{m:#?}")),
+        Ok(Labels(iter)) => iter.take(1).for_each(|l| println!("{l:#?}")),
         Err(e) => eprintln!("Error reading {arg}: {e}"),
     };
 }
