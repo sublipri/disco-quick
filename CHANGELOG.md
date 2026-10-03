@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-10-03
+
+### Fixed
+- Panic with 2026-09-01 releases dump due to missing status attribute
+
+### Changed
+- Made `Release` status field an `Option`
+
 ## 0.2.0 - 2025-05-21
 
 ### Fixed
